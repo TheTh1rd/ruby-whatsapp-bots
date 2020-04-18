@@ -15,15 +15,35 @@ class LocationBot < Sinatra::Base
     puts "Address: #{params["Address"]}"
     # Initialise a new response object that we will build up.
     response = Twilio::TwiML::MessagingResponse.new
-    
+    #send initial message
+    response.message body: "Welcome to weather buddy!"
     if params["Latitude"] && params["Longitude"]
       #call weather API
       open_weather = OpenWeather.new(ENV['OPENWEATHER_TOKEN'])
       forecast = open_weather.forecast(params["Latitude"], params["Longitude"])
       puts forecast
+      weather_code = forecast["weather"][0]["id"]
+      
+      case weather_code
+      when /\A2/
+        forecast_message = "Dont forget an umbrella, looks like your in for some thunderstorms."
+      when /\A3/
+        forecast_message  = "Bring an umbrella or coat, looks like its drizzling."
+      when /\A5/
+        forecast_message = "Dont forget an umbrella, looks like your in for some rain."
+      when /\A6/
+        forecast_message = "Time to grab some hat and gloves, its snowing out."
+      when /\A7/ 
+        forecast_message = "Is Mist really a weather forecast? I dont know what to say apple bought the good API."
+      when "800"
+        forecast_message = "Nice clear day in store for you!"
+      else
+        forecast_message = "Some clouds are in todays forecast, but hey, atleast its not raining."
+      end
 
       #parse API response to send to twilio
-      forecast_message = "It is currently #{forecast["current"]["weather"][0]["description"]}  outside with a temperature of #{forecast["current"]["temp"].to_s}°F ."
+      #oneapi call 
+      forecast_message = " The current temperature is #{forecast["main"]["temp"].round().to_s}°F ."
       response.message body: forecast_message
     else
       #if no location is sent
@@ -48,7 +68,7 @@ class OpenWeather
   def initialize(api_key)
     @api_key = api_key
   end
-  BASE_URL = "https://api.openweathermap.org/data/2.5/onecall?"
+  BASE_URL = "https://api.openweathermap.org/data/2.5/weather?"
 
   #function to make api call
   def forecast(lat, long)
