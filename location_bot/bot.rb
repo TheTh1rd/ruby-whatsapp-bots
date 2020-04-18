@@ -43,8 +43,9 @@ class LocationBot < Sinatra::Base
 
       #parse API response to send to twilio
       #oneapi call 
-      forecast_message = " The current temperature is #{forecast["main"]["temp"].round().to_s}°F ."
+      temp_message = " The current temperature is #{forecast["main"]["temp"].round().to_s}°F ."
       response.message body: forecast_message
+      response.message body: temp_message
     else
       #if no location is sent
       response.message body: "To get a weather forecast, send your location from WhatsApp."
