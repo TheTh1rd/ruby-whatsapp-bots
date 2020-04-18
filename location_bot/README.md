@@ -1,8 +1,8 @@
-# Base WhatsApp bot
+# LocationBot WhatsApp bot
 
-This bot is a base bot setup with Sinatra ready to receive incoming webhooks from Twilio and validate them, and a `config.ru` file to run the Sinatra app.
+This bot is a whatsapp bot setup with Sinatra ready to receive incoming webhooks from Twilio and validate them, and a `config.ru` file to run the Sinatra app.
 
-By default it replies to any incoming messages with a message that says "This is the base bot. Edit me to make your own bot."
+The bot responds to incoming messages with a weather forecast absed on the location recieved.
 
 ## Running the bot
 

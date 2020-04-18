@@ -16,41 +16,46 @@ class LocationBot < Sinatra::Base
     # Initialise a new response object that we will build up.
     response = Twilio::TwiML::MessagingResponse.new
     #send initial message
-    response.message body: "Welcome to weather buddy!"
-    if params["Latitude"] && params["Longitude"]
-      #call weather API
-      open_weather = OpenWeather.new(ENV['OPENWEATHER_TOKEN'])
-      forecast = open_weather.forecast(params["Latitude"], params["Longitude"])
-      puts forecast
-      weather_code = forecast["weather"][0]["id"]
-      
-      case weather_code
-      when /\A2/
-        forecast_message = "Dont forget an umbrella, looks like your in for some thunderstorms."
-      when /\A3/
-        forecast_message  = "Bring an umbrella or coat, looks like its drizzling."
-      when /\A5/
-        forecast_message = "Dont forget an umbrella, looks like your in for some rain."
-      when /\A6/
-        forecast_message = "Time to grab some hat and gloves, its snowing out."
-      when /\A7/ 
-        forecast_message = "Is Mist really a weather forecast? I dont know what to say apple bought the good API."
-      when "800"
-        forecast_message = "Nice clear day in store for you!"
+    response.message do |message|
+      message.body("Welcome to weather buddy!")
+      if params["Latitude"] && params["Longitude"]
+        #call weather API
+        open_weather = OpenWeather.new(ENV['OPENWEATHER_TOKEN'])
+        forecast = open_weather.forecast(params["Latitude"], params["Longitude"])
+        puts forecast
+        weather_code = forecast["weather"][0]["id"]
+        weather_icon = forecast["weather"][0]["icon"]
+
+        
+        case weather_code
+        when /\A2/
+          forecast_message = "Dont forget an umbrella, looks like your in for some thunderstorms."
+        when /\A3/
+          forecast_message  = "Bring an umbrella or coat, looks like its drizzling."
+        when /\A5/
+          forecast_message = "Dont forget an umbrella, looks like your in for some rain."
+        when /\A6/
+          forecast_message = "Time to grab some hat and gloves, its snowing out."
+        when /\A7/ 
+          forecast_message = "Is Mist really a weather forecast? I dont know what to say apple bought the good API."
+        when "800"
+          forecast_message = "Nice clear day in store for you!"
+        else
+          forecast_message = "Some clouds are in todays forecast, but hey, atleast its not raining. "
+          icon_message = "http://openweathermap.org/img/wn/#{weather_icon}@2x.png"
+        end
+
+        #parse API response to send to twilio
+        #oneapi call 
+        temp_message = " The current temperature is #{forecast["main"]["temp"].round().to_s}°F ."
+        message.body(forecast_message)
+        message.media(icon_message)
+        message.body(temp_message)
       else
-        forecast_message = "Some clouds are in todays forecast, but hey, atleast its not raining."
+        #if no location is sent
+        #response.message body: "To get a weather forecast, send your location from WhatsApp."
       end
-
-      #parse API response to send to twilio
-      #oneapi call 
-      temp_message = " The current temperature is #{forecast["main"]["temp"].round().to_s}°F ."
-      response.message body: forecast_message
-      response.message body: temp_message
-    else
-      #if no location is sent
-      response.message body: "To get a weather forecast, send your location from WhatsApp."
     end
-
 
   
     # TwiML is XML, so we set the Content-Type response header to text/xml
