@@ -1,8 +1,7 @@
 require "sinatra/base"
 require 'net/http'
-# require 'rack'
-# require 'twilio-ruby'
 STDOUT.sync = true
+
 class LocationBot < Sinatra::Base
   # This will ensure that webhook requests definitely come from Twilio.
    use Rack::TwilioWebhookAuthentication, ENV['TWILIO_AUTH_TOKEN'], '/bot'
@@ -17,36 +16,19 @@ class LocationBot < Sinatra::Base
     hook_body = params["Body"].downcase
     # Initialise a new response object that we will build up.
     response = Twilio::TwiML::MessagingResponse.new
-    #send initial message
+    
+
     response.message do |message|
+      #add initial message
       message.body("Welcome to weather buddy!")
 
+      #IYKYK
       if hook_body.include?("block time")
         message.body("ERROR: Unable to login to GSuite")
       end
 
-      if hook_body.include?("nasa")
-        message.body("Enjoy a photo courtesy of NASA APOD")
-      puts "nasa recieved"
-        #call NasaPlanetary API
-         nasa_planet = NasaPlanetary.new(ENV["NASA_TOKEN"])
-         nasa_body = nasa_planet.picture()
-         puts "nasa_body#{nasa_body}"
-         #pull variables from api call
-         nasa_pic = nasa_body["url"]
-         nasa_desc = nasa_body["title"]
-         puts nasa_pic
-         puts nasa_desc
-         #build message
-         message.body(nasa_desc)
-         #check if media type is supported
-         if nasa_body["media_type"] =="video"
-          message.body(nasa_pic)
-        else  
-           message.media(nasa_pic)
-        end
-      end
-
+      
+      #If user sent location
       if params["Latitude"] && params["Longitude"]
         #call weather API
         open_weather = OpenWeather.new(ENV['OPENWEATHER_TOKEN'])
@@ -57,8 +39,6 @@ class LocationBot < Sinatra::Base
         air_now = AirNow.new(ENV['AIRNOW_TOKEN'])
         air_quality = air_now.forecast(params["Latitude"], params["Longitude"])
         puts air_quality
-
-        
 
         #parse variables from response.
         weather_code = forecast["weather"][0]["id"]
@@ -104,18 +84,44 @@ class LocationBot < Sinatra::Base
         #message.media(icon_message)
         message.body(temp_message)
         #message.body(air_message)
-      else
+
+      #When location not sent
+      elsif hook_body.include?("nasa")
+          message.body("Enjoy a photo courtesy of NASA APOD")
+        puts "nasa recieved"
+          #call NasaPlanetary API
+           nasa_planet = NasaPlanetary.new(ENV["NASA_TOKEN"])
+           nasa_body = nasa_planet.picture()
+           puts "nasa_body#{nasa_body}"
+           #pull variables from api call
+           nasa_pic = nasa_body["url"]
+           nasa_desc = nasa_body["title"]
+           puts nasa_pic
+           puts nasa_desc
+           #build message
+           message.body(nasa_desc)
+           #check if media type is supported
+           if nasa_body["media_type"] =="video"
+            message.body(nasa_pic)
+          else  
+             message.media(nasa_pic)
+          end
+      #IYKYK
+      elsif hook_body.include?("block time")
+          message.body("ERROR: Unable to login to GSuite") 
+      else 
         #if no location is sent
-        #response.message body: "To get a weather forecast, send your location from WhatsApp."
+        response.message body: "To get a weather forecast, send your location from WhatsApp."
       end
     end
 
-  
     # TwiML is XML, so we set the Content-Type response header to text/xml
     content_type "text/xml"
     # Respond with the XML of the response object.
     response.to_xml
   end
+
+  #if someone goes to the URL
   get '/' do
     "Hey, what you doing here? Go Home"
   end
